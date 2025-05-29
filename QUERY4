@@ -1,0 +1,31 @@
+# Εύρεση διαδρομών ανά VendorID που πραγματοποιήθηκαν τη νύχτα (00:00–06:00)
+# με χρήση Spark SQL
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import hour
+
+# Δημιουργία SparkSession
+spark = SparkSession.builder \
+    .appName("Query 4 - SQL") \
+    .getOrCreate()
+
+# Φόρτωση δεδομένων από Parquet
+df = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2024.parquet")
+
+# Δημιουργία προσωρινού view με εξαγωγή ώρας από pickup_datetime
+df_with_hour = df.withColumn("hour", hour(df["tpep_pickup_datetime"]))
+df_with_hour.createOrReplaceTempView("trips")
+
+# SQL ερώτημα για διαδρομές που έγιναν μεταξύ 00:00 και 06:00
+sql_result = spark.sql("""
+    SELECT VendorID, COUNT(*) AS trip_count
+    FROM trips
+    WHERE hour >= 0 AND hour < 6
+    GROUP BY VendorID
+    ORDER BY trip_count DESC
+""")
+
+# Εμφάνιση αποτελεσμάτων
+sql_result.show()
+
+spark.stop()
