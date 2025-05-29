@@ -1,0 +1,55 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, TimestampType
+import os
+
+# Δημιουργία SparkSession
+spark = SparkSession.builder \
+    .appName("CSV to Parquet Local Conversion") \
+    .master("local[*]") \
+    .getOrCreate()
+
+spark.sparkContext.setLogLevel("ERROR")
+
+# 🔽 Τοπικό path του CSV
+csv_file_path = "yellow_tripdata_2024.csv"
+
+# 🔼 Output path για το Parquet
+output_path = "parquet_output/yellow_tripdata_2024"
+
+# 📐 Schema των δεδομένων
+schema = StructType([
+    StructField("VendorID", IntegerType()),
+    StructField("tpep_pickup_datetime", TimestampType()),
+    StructField("tpep_dropoff_datetime", TimestampType()),
+    StructField("passenger_count", IntegerType()),
+    StructField("trip_distance", FloatType()),
+    StructField("RatecodeID", IntegerType()),
+    StructField("store_and_fwd_flag", StringType()),
+    StructField("PULocationID", IntegerType()),
+    StructField("DOLocationID", IntegerType()),
+    StructField("payment_type", IntegerType()),
+    StructField("fare_amount", FloatType()),
+    StructField("extra", FloatType()),
+    StructField("mta_tax", FloatType()),
+    StructField("tip_amount", FloatType()),
+    StructField("tolls_amount", FloatType()),
+    StructField("improvement_surcharge", FloatType()),
+    StructField("total_amount", FloatType()),
+    StructField("congestion_surcharge", FloatType()),
+    StructField("airport_fee", FloatType())
+])
+
+# ✅ Φόρτωση CSV με schema
+df = spark.read.format("csv") \
+    .option("header", "false") \
+    .schema(schema) \
+    .load(csv_file_path)
+
+# Προεπισκόπηση
+print("📊 Πρώτες εγγραφές:")
+df.show(5)
+
+# ✅ Μετατροπή σε Parquet
+df.write.mode("overwrite").parquet(output_path)
+
+print(f"✅ Το αρχείο αποθηκεύτηκε ως Parquet στο: {output_path}")
