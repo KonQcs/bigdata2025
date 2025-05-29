@@ -1,0 +1,12 @@
+joined.createOrReplaceTempView("joined_table")
+sql_result = spark.sql("""
+    SELECT Borough, COUNT(*) as trip_count
+    FROM joined_table
+    GROUP BY Borough
+    ORDER BY trip_count DESC
+""")
+
+print("[SQL] Πλήθος διαδρομών ανά Borough:")
+sql_result.show(truncate=False)
+
+spark.stop()
