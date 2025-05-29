@@ -1,0 +1,40 @@
+# Υπολογισμός συνολικών εσόδων ανά Borough με scaling διαμόρφωσης Spark
+# Σύγκριση απόδοσης με διαφορετικά configs (εφαρμόζεται μέσω SparkSession.config)
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import sum as spark_sum
+import time
+
+# Δημιουργία SparkSession με παραμετρικά resources
+spark = SparkSession.builder \
+    .appName("Query 6 - Scaling & Revenue") \
+    .config("spark.executor.instances", "2") \
+    .config("spark.executor.memory", "4g") \
+    .config("spark.executor.cores", "2") \
+    .getOrCreate()
+
+# Ώρα έναρξης
+start_time = time.time()
+
+# Φόρτωση δεδομένων
+trips = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2024.parquet")
+zones = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/taxi_zone_lookup.parquet")
+
+# Join με τις ζώνες αποβίβασης (DOLocationID) για απόδοση ανά Borough
+joined = trips.join(zones, trips["DOLocationID"] == zones["LocationID"], "inner")
+
+# Υπολογισμός συνολικού ποσού (fare_amount + tip_amount) ανά Borough
+revenue = joined.withColumn("total_revenue", 
+            trips["fare_amount"] + trips["tip_amount"]) \
+    .groupBy("Borough") \
+    .agg(spark_sum("total_revenue").alias("sum_revenue")) \
+    .orderBy("sum_revenue", ascending=False)
+
+# Εμφάνιση αποτελεσμάτων
+revenue.show(truncate=False)
+
+# Ώρα λήξης και χρόνος εκτέλεσης
+end_time = time.time()
+print(f"Χρόνος εκτέλεσης: {end_time - start_time:.2f} sec")
+
+spark.stop()
