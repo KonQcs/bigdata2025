@@ -1,0 +1,5 @@
+with_dist.createOrReplaceTempView("trips")
+sql_result = spark.sql("SELECT MAX(distance) AS max_distance FROM trips")
+sql_result.show()
+
+spark.stop()
