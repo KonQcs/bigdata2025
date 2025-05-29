@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, TimestampType
 
-# ⚠️ Αντικατέστησε με το δικό σου username
+#  Αντικατέστησε με το δικό σου username
 username = "ikons"
 
 # Δημιουργία SparkSession
@@ -14,7 +14,7 @@ spark = SparkSession \
 spark.sparkContext.setLogLevel("ERROR")
 
 # Ορισμός του πλήρους schema του αρχείου yellow_tripdata_2024.csv
-# ⚠️ Το schema βασίζεται στο αρχείο που έχει 19 στήλες χωρίς header
+#  Το schema βασίζεται στο αρχείο που έχει 19 στήλες χωρίς header
 trip_schema = StructType([
     StructField("VendorID", IntegerType()),
     StructField("tpep_pickup_datetime", TimestampType()),
@@ -56,4 +56,4 @@ df.printSchema()
 # Αποθήκευση σε μορφή Parquet
 df.write.mode("overwrite").parquet(parquet_output_path)
 
-print("✅ Η μετατροπή σε Parquet ολοκληρώθηκε.")
+print(" Η μετατροπή σε Parquet ολοκληρώθηκε.")
