@@ -1,23 +1,23 @@
-from pyspark.sql import SparkSession
+\from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, TimestampType
 import os
 
-# ✅ Τοπικό μονοπάτι προς το αρχείο CSV (π.χ. στον ίδιο φάκελο με το script)
-csv_file_path = "yellow_tripdata_2024.csv"
-
-# 📍 Ο φάκελος εξόδου για τα αρχεία Parquet
-output_path = "output_parquet/yellow_tripdata_2024"
-
-# 🚀 Εκκίνηση SparkSession
+# Δημιουργία SparkSession
 spark = SparkSession.builder \
-    .appName("Convert CSV to Parquet - Local PyCharm") \
+    .appName("CSV to Parquet Local Conversion") \
     .master("local[*]") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
 
-# 📐 Ορισμός schema βάσει του dataset yellow_tripdata_2024
-trip_schema = StructType([
+# 🔽 Τοπικό path του CSV
+csv_file_path = "yellow_tripdata_2024.csv"
+
+# 🔼 Output path για το Parquet
+output_path = "parquet_output/yellow_tripdata_2024"
+
+# 📐 Schema των δεδομένων
+schema = StructType([
     StructField("VendorID", IntegerType()),
     StructField("tpep_pickup_datetime", TimestampType()),
     StructField("tpep_dropoff_datetime", TimestampType()),
@@ -39,17 +39,17 @@ trip_schema = StructType([
     StructField("airport_fee", FloatType())
 ])
 
-# 📥 Διαβάζουμε το CSV
+# ✅ Φόρτωση CSV με schema
 df = spark.read.format("csv") \
     .option("header", "false") \
-    .schema(trip_schema) \
+    .schema(schema) \
     .load(csv_file_path)
 
-# 🔍 Προβολή 5 πρώτων εγγραφών
+# Προεπισκόπηση
+print("📊 Πρώτες εγγραφές:")
 df.show(5)
-df.printSchema()
 
-# 💾 Αποθήκευση ως Parquet
+# ✅ Μετατροπή σε Parquet
 df.write.mode("overwrite").parquet(output_path)
 
-print(f"✅ Τα δεδομένα αποθηκεύτηκαν σε Parquet στον φάκελο: {output_path}")
+print(f"✅ Το αρχείο αποθηκεύτηκε ως Parquet στο: {output_path}")
