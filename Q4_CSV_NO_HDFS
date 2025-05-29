@@ -1,0 +1,51 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, TimestampType
+
+spark = SparkSession.builder \
+    .appName("Query 4 - CSV") \
+    .master("local[*]") \
+    .getOrCreate()
+spark.sparkContext.setLogLevel("ERROR")
+
+# Ορισμός schema
+schema = StructType([
+    StructField("VendorID", IntegerType()),
+    StructField("tpep_pickup_datetime", TimestampType()),
+    StructField("tpep_dropoff_datetime", TimestampType()),
+    StructField("passenger_count", IntegerType()),
+    StructField("trip_distance", FloatType()),
+    StructField("RatecodeID", IntegerType()),
+    StructField("store_and_fwd_flag", StringType()),
+    StructField("PULocationID", IntegerType()),
+    StructField("DOLocationID", IntegerType()),
+    StructField("payment_type", IntegerType()),
+    StructField("fare_amount", FloatType()),
+    StructField("extra", FloatType()),
+    StructField("mta_tax", FloatType()),
+    StructField("tip_amount", FloatType()),
+    StructField("tolls_amount", FloatType()),
+    StructField("improvement_surcharge", FloatType()),
+    StructField("total_amount", FloatType()),
+    StructField("congestion_surcharge", FloatType()),
+    StructField("airport_fee", FloatType())
+])
+
+# Φόρτωση CSV αρχείου
+df = spark.read.format("csv") \
+    .option("header", "false") \
+    .schema(schema) \
+    .load("data/yellow_tripdata_2024.csv")
+
+# Καταχώρηση ως προσωρινός πίνακας
+df.createOrReplaceTempView("trips")
+
+# SQL Query: συνολική χρέωση ανά τρόπο πληρωμής
+result = spark.sql("""
+    SELECT payment_type, SUM(total_amount) AS total_charges
+    FROM trips
+    GROUP BY payment_type
+    ORDER BY total_charges DESC
+""")
+
+print("💳 Συνολική χρέωση ανά τρόπο πληρωμής (CSV):")
+result.show()
