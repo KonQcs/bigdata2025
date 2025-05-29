@@ -1,16 +1,59 @@
-# Εύρεση πλήθους διαδρομών ανά Borough χρησιμοποιώντας DataFrame και SQL API
-
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, TimestampType
+
+# ⚠️ Αντικατέστησε με το δικό σου username
+username = "ikons"
 
 # Δημιουργία SparkSession
-spark = SparkSession.builder \
-    .appName("Query 3 - DataFrame & SQL") \
+spark = SparkSession \
+    .builder \
+    .appName("CSV to Parquet Conversion") \
     .getOrCreate()
 
-# Φόρτωση αρχείων
-trips = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2024.parquet")
-zones = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/taxi_zone_lookup.parquet")
+# Μείωση επιπέδου logging
+spark.sparkContext.setLogLevel("ERROR")
 
-# Join των διαδρομών με τις ζώνες επιβίβασης για εύρεση Borough
-joined = trips.join(zones, trips["PULocationID"] == zones["LocationID"], "inner")
+# Ορισμός του πλήρους schema του αρχείου yellow_tripdata_2024.csv
+# ⚠️ Το schema βασίζεται στο αρχείο που έχει 19 στήλες χωρίς header
+trip_schema = StructType([
+    StructField("VendorID", IntegerType()),
+    StructField("tpep_pickup_datetime", TimestampType()),
+    StructField("tpep_dropoff_datetime", TimestampType()),
+    StructField("passenger_count", IntegerType()),
+    StructField("trip_distance", FloatType()),
+    StructField("RatecodeID", IntegerType()),
+    StructField("store_and_fwd_flag", StringType()),
+    StructField("PULocationID", IntegerType()),
+    StructField("DOLocationID", IntegerType()),
+    StructField("payment_type", IntegerType()),
+    StructField("fare_amount", FloatType()),
+    StructField("extra", FloatType()),
+    StructField("mta_tax", FloatType()),
+    StructField("tip_amount", FloatType()),
+    StructField("tolls_amount", FloatType()),
+    StructField("improvement_surcharge", FloatType()),
+    StructField("total_amount", FloatType()),
+    StructField("congestion_surcharge", FloatType()),
+    StructField("airport_fee", FloatType())
+])
+
+# Διαδρομή αρχικού CSV αρχείου (χωρίς header)
+csv_path = f"hdfs://hdfs-namenode:9000/user/{username}/data/yellow_tripdata_2024.csv"
+
+# Διαδρομή εξόδου για Parquet
+parquet_output_path = f"hdfs://hdfs-namenode:9000/user/{username}/data/parquet/yellow_tripdata_2024.parquet"
+
+# Φόρτωση του CSV ως DataFrame
+df = spark.read.format("csv") \
+    .option("header", "false") \
+    .schema(trip_schema) \
+    .load(csv_path)
+
+# Προβολή για επιβεβαίωση
+df.show(5)
+df.printSchema()
+
+# Αποθήκευση σε μορφή Parquet
+df.write.mode("overwrite").parquet(parquet_output_path)
+
+print("✅ Η μετατροπή σε Parquet ολοκληρώθηκε.")
