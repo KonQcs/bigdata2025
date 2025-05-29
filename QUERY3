@@ -1,0 +1,16 @@
+# Εύρεση πλήθους διαδρομών ανά Borough χρησιμοποιώντας DataFrame και SQL API
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+
+# Δημιουργία SparkSession
+spark = SparkSession.builder \
+    .appName("Query 3 - DataFrame & SQL") \
+    .getOrCreate()
+
+# Φόρτωση αρχείων
+trips = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2024.parquet")
+zones = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/taxi_zone_lookup.parquet")
+
+# Join των διαδρομών με τις ζώνες επιβίβασης για εύρεση Borough
+joined = trips.join(zones, trips["PULocationID"] == zones["LocationID"], "inner")
