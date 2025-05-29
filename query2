@@ -1,0 +1,33 @@
+# query2_all_apis.py
+# ---------------------------------------------------------
+# Υλοποίηση του Query 2 με RDD, DataFrame και SQL APIs
+# Στόχος: Εύρεση μέγιστης απόστασης (με Haversine) μεταξύ pickup και dropoff
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, udf, max as spark_max
+from pyspark.sql.types import DoubleType
+import math
+
+# Συνάρτηση Haversine σε Python
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Ακτίνα Γης σε χλμ
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c
+
+# Spark session
+spark = SparkSession.builder \
+    .appName("Query 2 - All APIs") \
+    .getOrCreate()
+
+# Διαβάζουμε από Parquet
+df = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2015.parquet")
+
+# Φιλτράρουμε έγκυρα δεδομένα
+valid = df.filter(
+    (col("pickup_latitude") != 0) & (col("pickup_longitude") != 0) &
+    (col("dropoff_latitude") != 0) & (col("dropoff_longitude") != 0)
+)
