@@ -1,0 +1,55 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import avg
+from pyspark.sql.types import *
+
+# Ρυθμίσεις πόρων (π.χ. προσομοίωση 2 executors με 4 cores και 8GB memory)
+config = {
+    "spark.executor.instances": "2",
+    "spark.executor.cores": "4",
+    "spark.executor.memory": "8g"
+}
+
+# Δημιουργία SparkSession με παραμετρικά resources
+builder = SparkSession.builder.appName("Query 6 Scaling Demo").master("local[*]")
+
+for key, value in config.items():
+    builder = builder.config(key, value)
+
+spark = builder.getOrCreate()
+spark.sparkContext.setLogLevel("ERROR")
+
+# Σχήμα αρχείου
+schema = StructType([
+    StructField("VendorID", IntegerType()),
+    StructField("tpep_pickup_datetime", TimestampType()),
+    StructField("tpep_dropoff_datetime", TimestampType()),
+    StructField("passenger_count", IntegerType()),
+    StructField("trip_distance", FloatType()),
+    StructField("RatecodeID", IntegerType()),
+    StructField("store_and_fwd_flag", StringType()),
+    StructField("PULocationID", IntegerType()),
+    StructField("DOLocationID", IntegerType()),
+    StructField("payment_type", IntegerType()),
+    StructField("fare_amount", FloatType()),
+    StructField("extra", FloatType()),
+    StructField("mta_tax", FloatType()),
+    StructField("tip_amount", FloatType()),
+    StructField("tolls_amount", FloatType()),
+    StructField("improvement_surcharge", FloatType()),
+    StructField("total_amount", FloatType()),
+    StructField("congestion_surcharge", FloatType()),
+    StructField("airport_fee", FloatType())
+])
+
+# Φόρτωση parquet
+df = spark.read.parquet("parquet_output/yellow_tripdata_2024")
+
+# Query: Μέση απόσταση διαδρομής ανά αριθμό επιβατών
+result = df.groupBy("passenger_count") \
+    .agg(avg("trip_distance").alias("avg_distance")) \
+    .orderBy("passenger_count")
+
+result.show()
+
+# Τερματισμός
+spark.stop()
