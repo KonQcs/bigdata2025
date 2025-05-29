@@ -1,0 +1,3 @@
+df_result = joined.groupBy("Borough").count().orderBy(col("count").desc())
+print("[DataFrame] Πλήθος διαδρομών ανά Borough:")
+df_result.show(truncate=False)
