@@ -1,0 +1,21 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import avg
+
+# Δημιουργία SparkSession
+spark = SparkSession.builder \
+    .appName("Query 5 - Parquet") \
+    .master("local[*]") \
+    .getOrCreate()
+spark.sparkContext.setLogLevel("ERROR")
+
+# 🔽 Φόρτωση από Parquet
+df = spark.read.parquet("parquet_output/yellow_tripdata_2024")
+
+# ✅ Υπολογισμός μέσης χρέωσης ανά αριθμό επιβατών
+result = df.groupBy("passenger_count") \
+    .agg(avg("total_amount").alias("avg_total_amount")) \
+    .orderBy("passenger_count")
+
+# Εμφάνιση αποτελεσμάτων
+print("📊 Μέση χρέωση ανά αριθμό επιβατών (Parquet):")
+result.show()
