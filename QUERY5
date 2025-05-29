@@ -1,0 +1,25 @@
+# Εύρεση των δημοφιλέστερων ζευγών Pickup & Dropoff LocationID (top-10)
+# με χρήση DataFrame API
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count
+
+# Δημιουργία SparkSession
+spark = SparkSession.builder \
+    .appName("Query 5 - DataFrame") \
+    .getOrCreate()
+
+# Φόρτωση δεδομένων από Parquet
+df = spark.read.parquet("hdfs://hdfs-namenode:9000/user/your_username/data/parquet/yellow_tripdata_2024.parquet")
+
+# Ομαδοποίηση κατά Pickup και Dropoff, υπολογισμός πλήθους και ταξινόμηση
+popular_pairs = df.groupBy("PULocationID", "DOLocationID") \
+    .agg(count("*").alias("trip_count")) \
+    .orderBy(col("trip_count").desc()) \
+    .limit(10)
+
+# Εμφάνιση των top-10
+print("Top 10 ζεύγη ζωνών με τις περισσότερες διαδρομές:")
+popular_pairs.show(truncate=False)
+
+spark.stop()
