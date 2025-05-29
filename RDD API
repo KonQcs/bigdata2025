@@ -1,0 +1,19 @@
+rdd = valid.rdd.map(lambda row: (
+    row["pickup_latitude"], row["pickup_longitude"],
+    row["dropoff_latitude"], row["dropoff_longitude"]
+))
+
+rdd_distances = rdd.map(lambda t: haversine(*t))
+max_distance_rdd = rdd_distances.max()
+print(f"[RDD] Μέγιστη απόσταση: {max_distance_rdd:.2f} km")
+
+# ---------------- DataFrame API ----------------
+haversine_udf = udf(haversine, DoubleType())
+
+with_dist = valid.withColumn("distance", haversine_udf(
+    col("pickup_latitude"), col("pickup_longitude"),
+    col("dropoff_latitude"), col("dropoff_longitude")
+))
+
+max_distance_df = with_dist.agg(spark_max("distance")).collect()[0][0]
+print(f"[DataFrame] Μέγιστη απόσταση: {max_distance_df:.2f} km")
